@@ -1,0 +1,22 @@
+{
+    "name": "bangpound/drupal-service-provider",
+    "description": "Run Drupal routes through Silex.",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "Benjamin Doherty",
+            "email": "bjd@bangpound.org"
+        }
+    ],
+    "require": {
+        "bangpound/legacy-php-http-kernel-provider": "1.0.*@dev"
+    },
+    "autoload": {
+        "psr-4": { "Bangpound\\Silex\\": "" }
+    },
+    "extra": {
+        "branch-alias": {
+            "dev-master": "1.0.x-dev"
+        }
+    }
+}
