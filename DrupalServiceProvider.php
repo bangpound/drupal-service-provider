@@ -7,9 +7,11 @@ use Bangpound\Bridge\Drupal\BootstrapEvents;
 use Bangpound\Bridge\Drupal\Event\BootstrapEvent;
 use Bangpound\Bridge\Drupal\EventListener\AutoloadListener;
 use Bangpound\Bridge\Drupal\EventListener\BootstrapListener;
-use Bangpound\Bridge\Drupal\EventListener\ErrorHandlingListener;
+use Bangpound\Bridge\Drupal\EventListener\ConfigurationListener;
+use Bangpound\Bridge\Drupal\EventListener\FullListener;
 use Bangpound\Bridge\Drupal\EventListener\PageCacheListener;
 use Bangpound\Bridge\Drupal\EventListener\PageHeaderListener;
+use Bangpound\Bridge\Drupal\EventListener\ViewListener;
 use Silex\Application;
 use Silex\ControllerCollection;
 use Silex\ControllerProviderInterface;
@@ -17,6 +19,7 @@ use Silex\ServiceProviderInterface;
 use Symfony\Component\EventDispatcher\Event;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\RequestMatcher;
+use Symfony\Component\HttpKernel\KernelEvents;
 
 class DrupalServiceProvider implements ServiceProviderInterface, ControllerProviderInterface
 {
@@ -35,10 +38,22 @@ class DrupalServiceProvider implements ServiceProviderInterface, ControllerProvi
         // Drupal front controller.
         $controllers
             ->match('/{q}')
-            ->run(function ($q) use ($app) {
-                $_GET['q'] = $q;
-                menu_execute_active_handler($q);
-            })
+            ->before(function (Request $request) {
+                $q = $request->get('q');
+                if ($router_item = menu_get_item($q)) {
+                    if ($router_item['access']) {
+                        if ($router_item['include_file']) {
+                            require_once DRUPAL_ROOT . '/' . $router_item['include_file'];
+                        }
+                        $request->attributes->add(array(
+                            '_router_item' => $router_item,
+                            '_controller' => $router_item['page_callback'],
+                            '_arguments' => $router_item['page_arguments'],
+                            '_route' => $router_item['path'],
+                        ));
+                    }
+                }
+            }, Application::LATE_EVENT)
             ->assert('q', '[^_].+')
             ->value('_legacy', 'drupal')
         ;
@@ -95,16 +110,21 @@ class DrupalServiceProvider implements ServiceProviderInterface, ControllerProvi
         $dispatcher = $app['dispatcher'];
         $dispatcher->addSubscriber(new BootstrapListener());
 
-        $dispatcher->addSubscriber(new ErrorHandlingListener());
-        $dispatcher->addSubscriber(new AutoloadListener());
+        $dispatcher->addSubscriber(new ConfigurationListener());
         $dispatcher->addSubscriber(new PageCacheListener());
         $dispatcher->addSubscriber(new PageHeaderListener());
+        $dispatcher->addSubscriber(new FullListener());
 
-        $dispatcher->addListener(BootstrapEvents::DATABASE, function (BootstrapEvent $event) use ($app) {
+        $dispatcher->addSubscriber(new AutoloadListener());
+
+        $listener = new ViewListener($app['legacy.request_matcher']);
+        $dispatcher->addListener(KernelEvents::VIEW, array($listener, 'onKernelView'), 8);
+
+        $dispatcher->addListener(BootstrapEvents::FILTER_DATABASE, function (BootstrapEvent $event) use ($app) {
             $app['db.options'] = array(
                 'pdo' => \Database::getConnection(),
             );
-        }, -8);
+        });
 
         $app->mount('', $this->connect($app));
     }
