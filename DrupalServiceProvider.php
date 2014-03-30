@@ -19,6 +19,8 @@ use Silex\ServiceProviderInterface;
 use Symfony\Component\EventDispatcher\Event;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\RequestMatcher;
+use Symfony\Component\HttpKernel\Event\FilterControllerEvent;
+use Symfony\Component\HttpKernel\Event\GetResponseForControllerResultEvent;
 use Symfony\Component\HttpKernel\KernelEvents;
 
 class DrupalServiceProvider implements ServiceProviderInterface, ControllerProviderInterface
@@ -36,14 +38,12 @@ class DrupalServiceProvider implements ServiceProviderInterface, ControllerProvi
         $controllers = $app['controllers_factory'];
 
         // Drupal front controller.
-        /**  */
         $controllers
             ->match('{q}')
             ->before(function (Request $request) use ($app) {
 
                 if ($app['drupal.request_matcher']->matches($request)) {
                     $q = $request->get('q');
-                    $q = request_path();
                     if ($router_item = menu_get_item($q)) {
                         if ($router_item['access']) {
                             if ($router_item['include_file']) {
@@ -52,15 +52,16 @@ class DrupalServiceProvider implements ServiceProviderInterface, ControllerProvi
 
                             $request->attributes->add(array(
                                 '_router_item' => $router_item,
-                                '_controller' => $router_item['page_callback'],
-                                '_arguments' => $router_item['page_arguments'],
-                                '_route' => $router_item['path'],
+                                '_controller'  => $router_item['page_callback'],
+                                '_arguments'   => $router_item['page_arguments'],
+                                '_route'       => $router_item['path'],
                             ));
                         }
                     }
                 }
-            })
+            }, Application::LATE_EVENT)
             ->assert('q', '[^_].+$')
+            ->convert('q', function ($q) { return trim($q, '/'); })
             ->value('_legacy', 'drupal')
         ;
 
