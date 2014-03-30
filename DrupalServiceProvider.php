@@ -36,25 +36,31 @@ class DrupalServiceProvider implements ServiceProviderInterface, ControllerProvi
         $controllers = $app['controllers_factory'];
 
         // Drupal front controller.
+        /**  */
         $controllers
-            ->match('/{q}')
-            ->before(function (Request $request) {
-                $q = $request->get('q');
-                if ($router_item = menu_get_item($q)) {
-                    if ($router_item['access']) {
-                        if ($router_item['include_file']) {
-                            require_once DRUPAL_ROOT . '/' . $router_item['include_file'];
+            ->match('{q}')
+            ->before(function (Request $request) use ($app) {
+
+                if ($app['drupal.request_matcher']->matches($request)) {
+                    $q = $request->get('q');
+                    $q = request_path();
+                    if ($router_item = menu_get_item($q)) {
+                        if ($router_item['access']) {
+                            if ($router_item['include_file']) {
+                                require_once DRUPAL_ROOT . '/' . $router_item['include_file'];
+                            }
+
+                            $request->attributes->add(array(
+                                '_router_item' => $router_item,
+                                '_controller' => $router_item['page_callback'],
+                                '_arguments' => $router_item['page_arguments'],
+                                '_route' => $router_item['path'],
+                            ));
                         }
-                        $request->attributes->add(array(
-                            '_router_item' => $router_item,
-                            '_controller' => $router_item['page_callback'],
-                            '_arguments' => $router_item['page_arguments'],
-                            '_route' => $router_item['path'],
-                        ));
                     }
                 }
-            }, Application::LATE_EVENT)
-            ->assert('q', '[^_].+')
+            })
+            ->assert('q', '[^_].+$')
             ->value('_legacy', 'drupal')
         ;
 
