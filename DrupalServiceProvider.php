@@ -93,11 +93,7 @@ class DrupalServiceProvider implements ServiceProviderInterface, ControllerProvi
 
         $app->before(function (Request $request) use ($app) {
             if ($app['drupal.request_matcher']->matches($request)) {
-                /**
-                 * Root directory of Drupal installation.
-                 */
                 define('DRUPAL_ROOT', getcwd());
-
                 require_once DRUPAL_ROOT . '/includes/bootstrap.inc';
                 drupal_bootstrap(DRUPAL_BOOTSTRAP_FULL, TRUE, $app['drupal.bootstrap']);
             }
