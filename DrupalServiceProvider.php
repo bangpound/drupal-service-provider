@@ -19,8 +19,6 @@ use Silex\ServiceProviderInterface;
 use Symfony\Component\EventDispatcher\Event;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\RequestMatcher;
-use Symfony\Component\HttpKernel\Event\FilterControllerEvent;
-use Symfony\Component\HttpKernel\Event\GetResponseForControllerResultEvent;
 use Symfony\Component\HttpKernel\KernelEvents;
 
 class DrupalServiceProvider implements ServiceProviderInterface, ControllerProviderInterface
@@ -39,30 +37,17 @@ class DrupalServiceProvider implements ServiceProviderInterface, ControllerProvi
 
         // Drupal front controller.
         $controllers
-            ->match('{q}')
-            ->before(function (Request $request) use ($app) {
-
-                if ($app['drupal.request_matcher']->matches($request)) {
-                    $q = $request->get('q');
-                    if ($router_item = menu_get_item($q)) {
-                        if ($router_item['access']) {
-                            if ($router_item['include_file']) {
-                                require_once DRUPAL_ROOT . '/' . $router_item['include_file'];
-                            }
-
-                            $request->attributes->add(array(
-                                '_router_item' => $router_item,
-                                '_controller'  => $router_item['page_callback'],
-                                '_arguments'   => $router_item['page_arguments'],
-                                '_route'       => $router_item['path'],
-                            ));
-                        }
-                    }
-                }
-            }, Application::LATE_EVENT)
+            ->match('/{q}', 'drupal.controller:indexAction')
             ->assert('q', '[^_].+$')
-            ->convert('q', function ($q) { return trim($q, '/'); })
+            ->convert('_router_item',
+                function ($q, Request $request) {
+                    $q = $request->get('q');
+
+                    return menu_get_item(trim($q, '/'));
+                }
+            )
             ->value('_legacy', 'drupal')
+            ->bind('drupal_page')
         ;
 
         return $controllers;
@@ -78,27 +63,65 @@ class DrupalServiceProvider implements ServiceProviderInterface, ControllerProvi
      */
     public function register(Application $app)
     {
-        $app['drupal.request_matcher'] = $app->share(function ($c) {
-            $matcher = new RequestMatcher();
-            $matcher->matchAttribute('_legacy', 'drupal');
+        $app['drupal.request_matcher'] = $app->share(
+            function ($c) {
+                $matcher = new RequestMatcher();
+                $matcher->matchAttribute('_legacy', 'drupal');
 
-            return $matcher;
-        });
+                return $matcher;
+            });
 
-        $app['drupal.bootstrap'] = $app->share(function () use ($app) {
-            $bootstrap = new Bootstrap();
-            $bootstrap->setEventDispatcher($app['dispatcher']);
+        $app['drupal.bootstrap'] = $app->share(
+            function () use ($app) {
+                $bootstrap = new Bootstrap();
+                $bootstrap->setEventDispatcher($app['dispatcher']);
 
-            return $bootstrap;
-        });
+                return $bootstrap;
+            }
+        );
 
-        $app->before(function (Request $request) use ($app) {
-            if ($app['drupal.request_matcher']->matches($request)) {
+        $app['legacy.request_matcher'] = $app->share(
+            function ($c) {
+                return $c['drupal.request_matcher'];
+            }
+        );
+
+        $app->before(
+            function (Request $request) use ($app) {
                 define('DRUPAL_ROOT', getcwd());
                 require_once DRUPAL_ROOT . '/includes/bootstrap.inc';
                 drupal_bootstrap(DRUPAL_BOOTSTRAP_FULL, TRUE, $app['drupal.bootstrap']);
-            }
-        });
+
+                $pathinfo = $request->getPathInfo();
+
+                // The 'q' variable is pervasive in Drupal, so it's best to just keep
+                // it even though it's very un-Symfony.
+                $path = drupal_get_normal_path(substr($pathinfo, 1));
+
+                if (variable_get('menu_rebuild_needed', FALSE) || !variable_get('menu_masks', array())) {
+                    menu_rebuild();
+                }
+                $original_map = arg(NULL, $path);
+
+                $parts = array_slice($original_map, 0, MENU_MAX_PARTS);
+                $ancestors = menu_get_ancestors($parts);
+                $router_item = db_query_range('SELECT * FROM {menu_router} WHERE path IN (:ancestors) ORDER BY fit DESC', 0, 1, array(':ancestors' => $ancestors))->fetchAssoc();
+
+                if ($router_item) {
+                    // Allow modules to alter the router item before it is translated and
+                    // checked for access.
+                    drupal_alter('menu_get_item', $router_item, $path, $original_map);
+
+                    // The requested path is an unalaised Drupal route.
+                    $request->attributes->add(
+                        array(
+                            '_route' => $router_item['path'],
+                            '_legacy' => 'drupal',
+                        )
+                    );
+                }
+            }, 33
+        );
     }
 
     /**
@@ -123,11 +146,19 @@ class DrupalServiceProvider implements ServiceProviderInterface, ControllerProvi
         $listener = new ViewListener($app['legacy.request_matcher']);
         $dispatcher->addListener(KernelEvents::VIEW, array($listener, 'onKernelView'), 8);
 
-        $dispatcher->addListener(BootstrapEvents::FILTER_DATABASE, function (BootstrapEvent $event) use ($app) {
-            $app['db.options'] = array(
-                'pdo' => \Database::getConnection(),
-            );
-        });
+        $dispatcher->addListener(BootstrapEvents::FILTER_DATABASE,
+            function (BootstrapEvent $event) use ($app) {
+                $app['db.options'] = array(
+                    'pdo' => \Database::getConnection(),
+                );
+            }
+        );
+
+        $app['drupal.controller'] = $app->share(
+            function () {
+                return new DrupalController();
+            }
+        );
 
         $app->mount('', $this->connect($app));
     }
