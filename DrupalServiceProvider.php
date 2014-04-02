@@ -37,8 +37,12 @@ class DrupalServiceProvider implements ServiceProviderInterface, ControllerProvi
 
         // Drupal front controller.
         $controllers
-            ->match('/{q}', 'drupal.controller:indexAction')
+            ->match('/{q}', 'drupal.controller:deliverAction')
             ->assert('q', '[^_].+$')
+            ->value('_legacy', 'drupal')
+        ;
+
+        $controllers
             ->convert('_router_item',
                 function ($q, Request $request) {
                     $q = $request->get('q');
@@ -46,8 +50,13 @@ class DrupalServiceProvider implements ServiceProviderInterface, ControllerProvi
                     return menu_get_item(trim($q, '/'));
                 }
             )
-            ->value('_legacy', 'drupal')
-            ->bind('drupal_page')
+            ->convert('_route',
+                function ($q, Request $request) {
+                    $router_item = $request->attributes->get('_router_item');
+
+                    return $router_item['path'];
+                }
+            )
         ;
 
         return $controllers;
