@@ -16,7 +16,6 @@ use Silex\Application;
 use Silex\ControllerCollection;
 use Silex\ControllerProviderInterface;
 use Silex\ServiceProviderInterface;
-use Symfony\Component\EventDispatcher\Event;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\RequestMatcher;
 use Symfony\Component\HttpKernel\KernelEvents;
