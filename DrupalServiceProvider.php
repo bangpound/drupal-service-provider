@@ -33,6 +33,7 @@ class DrupalServiceProvider implements ServiceProviderInterface, ControllerProvi
      */
     public function connect(Application $app)
     {
+        /** @var ControllerCollection $controllers */
         $controllers = $app['controllers_factory'];
 
         // Drupal front controller.
@@ -138,6 +139,7 @@ class DrupalServiceProvider implements ServiceProviderInterface, ControllerProvi
      */
     public function boot(Application $app)
     {
+        /** @var \Symfony\Component\EventDispatcher\EventDispatcherInterface $dispatcher */
         $dispatcher = $app['dispatcher'];
         $dispatcher->addSubscriber(new DefaultPhasesListener());
 
