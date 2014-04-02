@@ -43,23 +43,6 @@ class DrupalServiceProvider implements ServiceProviderInterface, ControllerProvi
             ->value('_legacy', 'drupal')
         ;
 
-        $controllers
-            ->convert('_router_item',
-                function ($q, Request $request) {
-                    $q = $request->get('q');
-
-                    return menu_get_item(trim($q, '/'));
-                }
-            )
-            ->convert('_route',
-                function ($q, Request $request) {
-                    $router_item = $request->attributes->get('_router_item');
-
-                    return $router_item['path'];
-                }
-            )
-        ;
-
         return $controllers;
     }
 
