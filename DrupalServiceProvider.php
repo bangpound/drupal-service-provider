@@ -6,7 +6,7 @@ use Bangpound\Bridge\Drupal\Bootstrap;
 use Bangpound\Bridge\Drupal\BootstrapEvents;
 use Bangpound\Bridge\Drupal\Event\BootstrapEvent;
 use Bangpound\Bridge\Drupal\EventListener\AutoloadListener;
-use Bangpound\Bridge\Drupal\EventListener\BootstrapListener;
+use Bangpound\Bridge\Drupal\EventListener\DefaultPhasesListener;
 use Bangpound\Bridge\Drupal\EventListener\ConfigurationListener;
 use Bangpound\Bridge\Drupal\EventListener\FullListener;
 use Bangpound\Bridge\Drupal\EventListener\PageCacheListener;
@@ -134,7 +134,7 @@ class DrupalServiceProvider implements ServiceProviderInterface, ControllerProvi
     public function boot(Application $app)
     {
         $dispatcher = $app['dispatcher'];
-        $dispatcher->addSubscriber(new BootstrapListener());
+        $dispatcher->addSubscriber(new DefaultPhasesListener());
 
         $dispatcher->addSubscriber(new ConfigurationListener());
         $dispatcher->addSubscriber(new PageCacheListener());
