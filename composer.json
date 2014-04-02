@@ -9,6 +9,7 @@
         }
     ],
     "require": {
+        "bangpound/drupal-bridge": "1.0.*@dev",
         "bangpound/legacy-php-http-kernel-provider": "1.0.*@dev"
     },
     "autoload": {
