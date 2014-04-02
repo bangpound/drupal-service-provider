@@ -66,9 +66,12 @@ class DrupalServiceProvider implements ServiceProviderInterface, ControllerProvi
             )
         );
 
+        $app['drupal.bootstrap.class'] = 'Bangpound\\Bridge\\Drupal\\Bootstrap';
+
         $app['drupal.bootstrap'] = $app->share(
             function () use ($app) {
-                $bootstrap = new Bootstrap();
+                /** @var Bootstrap $bootstrap */
+                $bootstrap = new $app['drupal.bootstrap.class']();
                 $bootstrap->setEventDispatcher($app['dispatcher']);
                 require_once $app['web_dir'] . '/includes/bootstrap.inc';
                 drupal_bootstrap(NULL, TRUE, $bootstrap);
