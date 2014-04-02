@@ -72,13 +72,15 @@ class DrupalServiceProvider implements ServiceProviderInterface, ControllerProvi
      */
     public function register(Application $app)
     {
-        $app['drupal.request_matcher'] = $app->share(
-            function ($c) {
-                $matcher = new RequestMatcher();
-                $matcher->matchAttribute('_legacy', 'drupal');
+        $app['legacy.request_matcher'] = $app->share(
+            $app->extend('legacy.request_matcher',
+                function (RequestMatcher $matcher, $c) {
+                    $matcher->matchAttribute('_legacy', 'drupal');
 
-                return $matcher;
-            });
+                    return $matcher;
+                }
+            )
+        );
 
         $app['drupal.bootstrap'] = $app->share(
             function () use ($app) {
@@ -86,12 +88,6 @@ class DrupalServiceProvider implements ServiceProviderInterface, ControllerProvi
                 $bootstrap->setEventDispatcher($app['dispatcher']);
 
                 return $bootstrap;
-            }
-        );
-
-        $app['legacy.request_matcher'] = $app->share(
-            function ($c) {
-                return $c['drupal.request_matcher'];
             }
         );
 
