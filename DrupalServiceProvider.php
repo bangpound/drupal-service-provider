@@ -7,19 +7,19 @@ use Bangpound\Bridge\Drupal\BootstrapEvents;
 use Bangpound\Bridge\Drupal\Controller\Controller;
 use Bangpound\Bridge\Drupal\Event\BootstrapEvent;
 use Bangpound\Bridge\Drupal\EventListener\AutoloadListener;
+use Bangpound\Bridge\Drupal\EventListener\ControllerListener;
 use Bangpound\Bridge\Drupal\EventListener\DefaultPhasesListener;
 use Bangpound\Bridge\Drupal\EventListener\ConfigurationListener;
 use Bangpound\Bridge\Drupal\EventListener\FullListener;
 use Bangpound\Bridge\Drupal\EventListener\PageCacheListener;
 use Bangpound\Bridge\Drupal\EventListener\PageHeaderListener;
-use Bangpound\Bridge\Drupal\EventListener\ViewListener;
+use Bangpound\Bridge\Drupal\EventListener\VariablesListener;
 use Silex\Application;
 use Silex\ControllerCollection;
 use Silex\ControllerProviderInterface;
 use Silex\ServiceProviderInterface;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\RequestMatcher;
-use Symfony\Component\HttpKernel\KernelEvents;
 
 class DrupalServiceProvider implements ServiceProviderInterface, ControllerProviderInterface
 {
@@ -149,11 +149,10 @@ class DrupalServiceProvider implements ServiceProviderInterface, ControllerProvi
         $dispatcher->addSubscriber(new PageCacheListener());
         $dispatcher->addSubscriber(new PageHeaderListener());
         $dispatcher->addSubscriber(new FullListener());
+        $dispatcher->addSubscriber(new VariablesListener($app['drupal.conf']));
+        $dispatcher->addSubscriber(new ControllerListener($app['legacy.request_matcher']));
 
         $dispatcher->addSubscriber(new AutoloadListener());
-
-        $listener = new ViewListener($app['legacy.request_matcher']);
-        $dispatcher->addListener(KernelEvents::VIEW, array($listener, 'onKernelView'), 8);
 
         $dispatcher->addListener(BootstrapEvents::FILTER_DATABASE,
             function (BootstrapEvent $event) use ($app) {
