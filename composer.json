@@ -12,6 +12,7 @@
         "bangpound/legacy-php-http-kernel-provider": "1.0.*@dev"
     },
     "autoload": {
+        "classmap": ["Druplex.php"]
         "psr-4": { "Bangpound\\Silex\\": "" }
     },
     "extra": {

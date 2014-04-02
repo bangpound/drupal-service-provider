@@ -56,6 +56,9 @@ class DrupalServiceProvider implements ServiceProviderInterface, ControllerProvi
      */
     public function register(Application $app)
     {
+        $app['drupal.bootstrap.class'] = 'Bangpound\\Bridge\\Drupal\\Bootstrap';
+        $app['drupal.class'] = 'Druplex';
+
         $app['legacy.request_matcher'] = $app->share(
             $app->extend('legacy.request_matcher',
                 function (RequestMatcher $matcher, $c) {
@@ -65,8 +68,6 @@ class DrupalServiceProvider implements ServiceProviderInterface, ControllerProvi
                 }
             )
         );
-
-        $app['drupal.bootstrap.class'] = 'Bangpound\\Bridge\\Drupal\\Bootstrap';
 
         $app['drupal.bootstrap'] = $app->share(
             function () use ($app) {
@@ -155,5 +156,7 @@ class DrupalServiceProvider implements ServiceProviderInterface, ControllerProvi
         );
 
         $app->mount('', $this->connect($app));
+
+        $app['drupal.class']::setPimple($app);
     }
 }
