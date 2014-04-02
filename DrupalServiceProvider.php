@@ -4,6 +4,7 @@ namespace Bangpound\Silex;
 
 use Bangpound\Bridge\Drupal\Bootstrap;
 use Bangpound\Bridge\Drupal\BootstrapEvents;
+use Bangpound\Bridge\Drupal\Controller\Controller;
 use Bangpound\Bridge\Drupal\Event\BootstrapEvent;
 use Bangpound\Bridge\Drupal\EventListener\AutoloadListener;
 use Bangpound\Bridge\Drupal\EventListener\DefaultPhasesListener;
@@ -155,7 +156,7 @@ class DrupalServiceProvider implements ServiceProviderInterface, ControllerProvi
 
         $app['drupal.controller'] = $app->share(
             function () {
-                return new DrupalController();
+                return new Controller();
             }
         );
 
