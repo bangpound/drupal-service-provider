@@ -87,6 +87,8 @@ class DrupalServiceProvider implements ServiceProviderInterface, ControllerProvi
             function () use ($app) {
                 $bootstrap = new Bootstrap();
                 $bootstrap->setEventDispatcher($app['dispatcher']);
+                require_once $app['web_dir'] . '/includes/bootstrap.inc';
+                drupal_bootstrap(NULL, TRUE, $bootstrap);
 
                 return $bootstrap;
             }
@@ -94,9 +96,9 @@ class DrupalServiceProvider implements ServiceProviderInterface, ControllerProvi
 
         $app->before(
             function (Request $request) use ($app) {
+                $app['drupal.bootstrap'];
                 define('DRUPAL_ROOT', getcwd());
-                require_once DRUPAL_ROOT . '/includes/bootstrap.inc';
-                drupal_bootstrap(DRUPAL_BOOTSTRAP_FULL, TRUE, $app['drupal.bootstrap']);
+                drupal_bootstrap(DRUPAL_BOOTSTRAP_FULL);
 
                 $pathinfo = $request->getPathInfo();
 
