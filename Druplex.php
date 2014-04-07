@@ -1,6 +1,8 @@
 <?php
 
-class Druplex implements \Bangpound\Bridge\Drupal\DrupalInterface
+use Bangpound\Bridge\Drupal\DrupalInterface;
+
+class Druplex implements DrupalInterface
 {
     /**
      * @var \Pimple
@@ -37,5 +39,30 @@ class Druplex implements \Bangpound\Bridge\Drupal\DrupalInterface
     public static function get($id)
     {
         return self::$pimple->offsetGet($id);
+    }
+
+    public static function getResponse()
+    {
+        return self::$pimple['legacy.response'];
+    }
+
+    public static function getSession()
+    {
+        // TODO: Implement getSession() method.
+    }
+
+    public static function getEventDispatcher()
+    {
+        return self::$pimple['dispatcher'];
+    }
+
+    public static function getKernel()
+    {
+        return self::$pimple['kernel'];
+    }
+
+    public static function getLogger()
+    {
+        return self::$pimple['logger'];
     }
 }
