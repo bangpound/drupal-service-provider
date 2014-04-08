@@ -41,7 +41,10 @@ class DrupalServiceProvider implements ServiceProviderInterface, ControllerProvi
             ->match('/{q}', 'drupal.controller:deliverAction')
             ->assert('q', '[^_].+$')
             ->value('_legacy', 'drupal')
-            ->convert('router_item', function ($q, Request $request) {
+            ->convert('q', function ($q) {
+                return drupal_get_normal_path($q);
+            })
+            ->convert('router_item', function ($router_item = array(), Request $request) {
                 $q = $request->get('q');
 
                 return menu_get_item($q);
