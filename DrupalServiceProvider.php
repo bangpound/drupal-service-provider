@@ -9,6 +9,7 @@ use Bangpound\Bridge\Drupal\Event\BootstrapEvent;
 use Bangpound\Bridge\Drupal\EventListener\AutoloadListener;
 use Bangpound\Bridge\Drupal\EventListener\DefaultPhasesListener;
 use Bangpound\Bridge\Drupal\EventListener\ConfigurationListener;
+use Bangpound\Bridge\Drupal\EventListener\ExceptionListener;
 use Bangpound\Bridge\Drupal\EventListener\FullListener;
 use Bangpound\Bridge\Drupal\EventListener\HeaderListener;
 use Bangpound\Bridge\Drupal\EventListener\PageCacheListener;
@@ -151,6 +152,7 @@ class DrupalServiceProvider implements ServiceProviderInterface, ControllerProvi
         $dispatcher->addSubscriber(new PageCacheListener());
         $dispatcher->addSubscriber(new PageHeaderListener());
         $dispatcher->addSubscriber(new FullListener());
+        $dispatcher->addSubscriber(new ExceptionListener($app['legacy.request_matcher']));
         $dispatcher->addSubscriber(new VariablesListener($app['drupal.conf']));
 
         $dispatcher->addSubscriber(new AutoloadListener());
