@@ -41,11 +41,6 @@ class Druplex implements DrupalInterface
         return self::$pimple->offsetGet($id);
     }
 
-    public static function getResponse()
-    {
-        return self::$pimple['legacy.response'];
-    }
-
     public static function getSession()
     {
         // TODO: Implement getSession() method.

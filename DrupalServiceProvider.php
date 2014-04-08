@@ -11,6 +11,7 @@ use Bangpound\Bridge\Drupal\EventListener\ControllerListener;
 use Bangpound\Bridge\Drupal\EventListener\DefaultPhasesListener;
 use Bangpound\Bridge\Drupal\EventListener\ConfigurationListener;
 use Bangpound\Bridge\Drupal\EventListener\FullListener;
+use Bangpound\Bridge\Drupal\EventListener\HeaderListener;
 use Bangpound\Bridge\Drupal\EventListener\PageCacheListener;
 use Bangpound\Bridge\Drupal\EventListener\PageHeaderListener;
 use Bangpound\Bridge\Drupal\EventListener\VariablesListener;
@@ -67,6 +68,12 @@ class DrupalServiceProvider implements ServiceProviderInterface, ControllerProvi
                     return $matcher;
                 }
             )
+        );
+
+        $app['drupal.listener.header'] = $app->share(
+            function ($c) {
+                return new HeaderListener($c['legacy.request_matcher']);
+            }
         );
 
         $app['drupal.bootstrap'] = $app->share(
@@ -130,6 +137,7 @@ class DrupalServiceProvider implements ServiceProviderInterface, ControllerProvi
     {
         /** @var \Symfony\Component\EventDispatcher\EventDispatcherInterface $dispatcher */
         $dispatcher = $app['dispatcher'];
+        $dispatcher->addSubscriber($app['drupal.listener.header']);
         $dispatcher->addSubscriber(new DefaultPhasesListener());
 
         $dispatcher->addSubscriber(new ConfigurationListener());
